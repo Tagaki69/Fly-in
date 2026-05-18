@@ -26,3 +26,12 @@ class ConnectionSchema(BaseModel):
     left: str
     right: str
     max_link_capacity: int = Field(default=1, gt=0)
+
+
+class ParsedMap(BaseModel):
+    config: FlyinConfig
+    zones: dict[str, ZoneSchema]
+    start_name: str
+    end_name: str
+    connections: list[ConnectionSchema]
+
