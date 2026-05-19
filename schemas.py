@@ -34,4 +34,3 @@ class ParsedMap(BaseModel):
     start_name: str
     end_name: str
     connections: list[ConnectionSchema]
-

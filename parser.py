@@ -227,7 +227,9 @@ def _make_connection_key(left: str, right: str) -> tuple[str, str]:
     if left == right:
         raise ValueError("connection must link two different zones")
 
-    return tuple(sorted((left, right)))
+    if left < right:
+        return left, right
+    return right, left
 
 
 def _validate_result(
