@@ -29,3 +29,23 @@ class Graph:
             raise ValueError(f"unknown zone: {zone_name}")
 
         return self.adjacency[zone_name]
+
+    def get_zone(self, zone_name: str) -> ZoneSchema:
+        if zone_name not in self.zones:
+            raise ValueError(f"unknown zone: {zone_name}")
+
+        return self.zones[zone_name]
+
+    def _make_connection_key(self, left: str, right: str) -> tuple[str, str]:
+        left = left.strip()
+        right = right.strip()
+
+        if not left or not right:
+            raise ValueError("connection zones must not be empty")
+
+        if left == right:
+            raise ValueError("connection must link two different zones")
+
+        if left < right:
+            return left, right
+        return right, left
