@@ -1,4 +1,4 @@
-from schemas import ConnectionSchema, ParsedMap, ZoneSchema
+from schemas import ConnectionSchema, ParsedMap, ZoneSchema, ZoneType
 
 
 class Graph:
@@ -11,10 +11,12 @@ class Graph:
             parsed_map.connections
         )
         self.adjacency: dict[str, list[str]] = {}
+        self.connections: dict[tuple[str, str], ConnectionSchema] = {}
 
         for zone_name in self.zones:
             self.adjacency[zone_name] = []
         self._build_adjacency()
+        self._build_connections_dict()
 
     def _build_adjacency(self) -> None:
         for connection in self.connections_list:
@@ -49,3 +51,50 @@ class Graph:
         if left < right:
             return left, right
         return right, left
+
+    def _build_connections_dict(self) -> None:
+        for connection in self.connections_list:
+            key = self._make_connection_key(
+                connection.left,
+                connection.right,
+            )
+            self.connections[key] = connection
+
+    def get_connection(self, left: str, right: str) -> ConnectionSchema:
+        key = self._make_connection_key(left, right)
+
+        if key not in self.connections:
+            raise ValueError(f"unknown connection: {left}-{right}")
+
+        return self.connections[key]
+
+    def is_blocked(self, zone_name: str) -> bool:
+        zone = self.get_zone(zone_name)
+
+        return zone.zone_type == ZoneType.BLOCKED
+
+    def get_movement_cost(self, zone_name: str) -> int:
+        zone = self.get_zone(zone_name)
+
+        if zone.zone_type == ZoneType.BLOCKED:
+            raise ValueError(f"blocked zone is not reachable: {zone_name}")
+
+        if zone.zone_type == ZoneType.RESTRICTED:
+            return 2
+
+        return 1
+
+    def is_start(self, zone_name: str) -> bool:
+        self.get_zone(zone_name)
+
+        return zone_name == self.start_name
+
+    def is_end(self, zone_name: str) -> bool:
+        self.get_zone(zone_name)
+
+        return zone_name == self.end_name
+
+    def display(self) -> None:
+        for zone_name, neighbors in self.adjacency.items():
+            neighbors_text = ", ".join(neighbors)
+            print(f"{zone_name} -> {neighbors_text}")
