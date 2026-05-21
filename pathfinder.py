@@ -36,31 +36,14 @@ class Pathfinder:
             visited.add(current_zone)
 
             if current_zone == end:
-                path: list[str] = []
-                cursor: str | None = end
+                return self._reconstruct_path(parents, end)
 
-                while cursor is not None:
-                    path.append(cursor)
-                    cursor = parents[cursor]
-
-                path.reverse()
-                return path
-
-            for neighbor in self.graph.get_neighbors(current_zone):
-                if neighbor in visited:
-                    continue
-
-                if self.graph.is_blocked(neighbor):
-                    continue
+            for neighbor in self._get_valid_neighbors(current_zone, visited):
 
                 movement_cost = self.graph.get_movement_cost(neighbor)
                 new_distance = current_distance + movement_cost
 
-                zone = self.graph.get_zone(neighbor)
-                priority_penalty = 1
-
-                if zone.zone_type == ZoneType.PRIORITY:
-                    priority_penalty = 0
+                priority_penalty = self._get_priority_penalty(neighbor)
 
                 new_priority = current_priority + priority_penalty
                 known_distance = distances.get(neighbor)
@@ -84,3 +67,48 @@ class Pathfinder:
                     )
 
         raise ValueError(f"no path found from {start} to {end}")
+
+    def _reconstruct_path(
+        self,
+        parents: dict[str, str | None],
+        end: str,
+    ) -> list[str]:
+
+        path: list[str] = []
+        cursor: str | None = end
+
+        while cursor is not None:
+            if cursor not in parents:
+                raise ValueError(f"missing parent for zone: {cursor}")
+
+            path.append(cursor)
+            cursor = parents[cursor]
+
+        path.reverse()
+        return path
+
+    def _get_valid_neighbors(
+        self,
+        zone_name: str,
+        visited: set[str],
+    ) -> list[str]:
+        valid_neighbors: list[str] = []
+
+        for neighbor in self.graph.get_neighbors(zone_name):
+            if neighbor in visited:
+                continue
+
+            if self.graph.is_blocked(neighbor):
+                continue
+
+            valid_neighbors.append(neighbor)
+
+        return valid_neighbors
+
+    def _get_priority_penalty(self, zone_name: str) -> int:
+        zone = self.graph.get_zone(zone_name)
+
+        if zone.zone_type == ZoneType.PRIORITY:
+            return 0
+
+        return 1
