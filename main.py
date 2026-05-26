@@ -1,14 +1,17 @@
+import argparse
 import sys
 
 from graph import Graph
 from parser import parse_file
 from pathfinder import Pathfinder
+from simulator import Simulator
+from visualizer import PygameVisualizer
 
 
 def print_parsed_map(graph: Graph) -> None:
     """Print parsed map data."""
     print("=== CONFIG ===")
-    print(f"nb_drones: {graph.zones}")
+    print(f"nb_drones: {graph.nb_drones}")
 
     print("\n=== START / END ===")
     print(f"start: {graph.start_name}")
@@ -39,52 +42,96 @@ def print_graph(graph: Graph) -> None:
     graph.display()
 
 
-def print_shortest_path(graph: Graph) -> None:
-    """Find and print shortest path."""
-    pathfinder = Pathfinder(graph)
-    path = pathfinder.find_shortest_path()
+def print_paths(paths: list[list[str]]) -> None:
+    """Print selected paths."""
+    print("\n=== PATHS ===")
 
-    print("\n=== SHORTEST PATH ===")
-    print(" -> ".join(path))
+    for index, path in enumerate(paths, start=1):
+        print(f"path {index}: {' -> '.join(path)}")
 
-    print("\n=== PATH DETAILS ===")
-    total_cost = 0
 
-    for index, zone_name in enumerate(path):
-        zone = graph.get_zone(zone_name)
+def print_simulation(output_lines: list[str], debug: bool) -> None:
+    """Print simulation output."""
+    if debug:
+        print("\n=== SIMULATION ===")
 
-        if index == 0:
-            print(f"{zone_name}: start, cost=0")
-            continue
+    for line in output_lines:
+        print(line)
 
-        cost = graph.get_movement_cost(zone_name)
-        total_cost += cost
+    if debug:
+        print(f"\nTotal turns: {len(output_lines)}")
 
-        print(
-            f"{zone_name}: "
-            f"type={zone.zone_type.value}, "
-            f"cost={cost}, "
-            f"total={total_cost}"
-        )
 
-    print(f"\nTotal cost: {total_cost}")
+def run_visualizer(
+    graph: Graph,
+    paths: list[list[str]],
+    simulator: Simulator,
+) -> None:
+    """Run Pygame visualizer."""
+    visualizer = PygameVisualizer(graph)
+    visualizer.run(
+        history=simulator.history,
+        paths=paths,
+    )
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description="Run Fly-in drone simulation.",
+    )
+
+    parser.add_argument(
+        "map_file",
+        help="Path to the map file.",
+    )
+
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print parser, graph and path debug information.",
+    )
+
+    parser.add_argument(
+        "--visual",
+        action="store_true",
+        help="Open Pygame visualizer.",
+    )
+
+    parser.add_argument(
+        "--max-paths",
+        type=int,
+        default=5,
+        help="Maximum number of paths to use.",
+    )
+
+    return parser.parse_args()
 
 
 def main() -> None:
-    """Run parser, graph builder and pathfinder."""
-    if len(sys.argv) != 2:
-        print("Usage: python3 main.py <map_file>")
-        sys.exit(1)
-
-    filename = sys.argv[1]
+    """Run parser, graph builder, pathfinder and simulator."""
+    args = parse_args()
 
     try:
-        parsed_map = parse_file(filename)
+        parsed_map = parse_file(args.map_file)
         graph = Graph(parsed_map)
+        pathfinder = Pathfinder(graph)
 
-        print_parsed_map(graph)
-        print_graph(graph)
-        print_shortest_path(graph)
+        max_paths = min(graph.nb_drones, args.max_paths)
+        paths = pathfinder.find_multiple_paths(max_paths)
+
+        simulator = Simulator(graph, paths)
+        output_lines = simulator.run()
+
+        if args.debug:
+            print_parsed_map(graph)
+            print_graph(graph)
+            print_paths(paths)
+
+        if args.visual:
+            run_visualizer(graph, paths, simulator)
+
+        print_simulation(output_lines, args.debug)
 
     except FileNotFoundError as error:
         print(error)
