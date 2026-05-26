@@ -7,6 +7,7 @@ class Graph:
         self.zones: dict[str, ZoneSchema] = parsed_map.zones
         self.start_name: str = parsed_map.start_name
         self.end_name: str = parsed_map.end_name
+        self.nb_drones: int = parsed_map.config.nb_drones
         self.connections_list: list[ConnectionSchema] = (
             parsed_map.connections
         )
