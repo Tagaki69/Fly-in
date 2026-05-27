@@ -10,6 +10,7 @@ class PygameVisualizer:
     """Display and animate a Fly-in simulation with Pygame."""
 
     def __init__(self, graph: Graph) -> None:
+        """Initialize the visualizer with graph data and display settings."""
         self.graph: Graph = graph
         self.width: int = 1280
         self.height: int = 800

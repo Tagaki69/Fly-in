@@ -6,6 +6,7 @@ class Drone:
     """Represent one drone moving along one assigned path."""
 
     def __init__(self, drone_id: int, path: list[str]) -> None:
+        """Initialize a drone with its identifier and assigned path."""
         self.drone_id: int = drone_id
         self.path: list[str] = path
         self.path_index: int = 0
@@ -17,6 +18,7 @@ class Simulator:
     """Simulate drone movements turn by turn."""
 
     def __init__(self, graph: Graph, paths: list[list[str]]) -> None:
+        """Initialize the simulator with a graph and available paths."""
         if not paths:
             raise ValueError("simulator needs at least one path")
 
@@ -35,6 +37,7 @@ class Simulator:
         self.history.append(self._capture_positions())
 
     def _capture_positions(self) -> dict[int, str]:
+        """Capture the current zone of each drone."""
         positions: dict[int, str] = {}
 
         for drone in self.drones:
@@ -43,11 +46,14 @@ class Simulator:
         return positions
 
     def _validate_paths(self, paths: list[list[str]]) -> None:
+        """Validate that each path contains at least a start and an end
+        zone."""
         for path in paths:
             if len(path) < 2:
                 raise ValueError("path must contain at least start and end")
 
     def _create_drones(self) -> None:
+        """Create drones and assign them to the best available paths."""
         path_loads = [0 for _ in self.paths]
 
         for drone_id in range(1, self.nb_drones + 1):
@@ -56,6 +62,8 @@ class Simulator:
             self.drones.append(Drone(drone_id, self.paths[path_index]))
 
     def _choose_path_index(self, path_loads: list[int]) -> int:
+        """Choose the path with the best score based on length and
+        current load."""
         best_index = 0
         best_score = len(self.paths[0]) + path_loads[0]
 
@@ -69,6 +77,7 @@ class Simulator:
         return best_index
 
     def _all_delivered(self) -> bool:
+        """Return whether all drones have reached the end zone."""
         for drone in self.drones:
             if not drone.delivered:
                 return False
@@ -76,9 +85,11 @@ class Simulator:
         return True
 
     def _get_current_zone(self, drone: Drone) -> str:
+        """Return the current zone of a drone."""
         return drone.path[drone.path_index]
 
     def _get_next_zone(self, drone: Drone) -> str | None:
+        """Return the next zone of a drone, if one exists."""
         next_index = drone.path_index + 1
 
         if next_index >= len(drone.path):
@@ -91,6 +102,7 @@ class Simulator:
         left: str,
         right: str,
     ) -> tuple[str, str]:
+        """Create a normalized key for connection usage."""
         left = left.strip()
         right = right.strip()
 
@@ -99,6 +111,7 @@ class Simulator:
         return right, left
 
     def _build_zone_occupancy(self) -> dict[str, int]:
+        """Build the current occupancy count for each intermediate zone."""
         zone_occupancy: dict[str, int] = {}
 
         for drone in self.drones:
@@ -124,6 +137,7 @@ class Simulator:
         zone_name: str,
         zone_occupancy: dict[str, int],
     ) -> None:
+        """Decrease the occupancy count of a zone."""
         if self.graph.is_start(zone_name) or self.graph.is_end(zone_name):
             return
 
@@ -140,6 +154,7 @@ class Simulator:
         zone_name: str,
         zone_occupancy: dict[str, int],
     ) -> None:
+        """Increase the occupancy count of a zone."""
         if self.graph.is_start(zone_name) or self.graph.is_end(zone_name):
             return
 
@@ -151,6 +166,7 @@ class Simulator:
         right: str,
         connection_usage: dict[tuple[str, str], int],
     ) -> int:
+        """Return the current usage count of a connection."""
         key = self._make_connection_usage_key(left, right)
 
         return connection_usage.get(key, 0)
@@ -161,11 +177,13 @@ class Simulator:
         right: str,
         connection_usage: dict[tuple[str, str], int],
     ) -> None:
+        """Increase the usage count of a connection."""
         key = self._make_connection_usage_key(left, right)
 
         connection_usage[key] = connection_usage.get(key, 0) + 1
 
     def _is_restricted_zone(self, zone_name: str) -> bool:
+        """Return whether a zone is restricted."""
         zone = self.graph.get_zone(zone_name)
 
         return zone.zone_type == ZoneType.RESTRICTED
@@ -176,6 +194,7 @@ class Simulator:
         zone_occupancy: dict[str, int],
         connection_usage: dict[tuple[str, str], int],
     ) -> bool:
+        """Return whether a drone can move to its next zone."""
         if drone.delivered:
             return False
 
@@ -213,6 +232,7 @@ class Simulator:
         return current_count < next_zone_data.max_drones
 
     def _move_drone(self, drone: Drone) -> str:
+        """Move a drone to its next zone and return the movement output."""
         next_zone = self._get_next_zone(drone)
 
         if next_zone is None:
@@ -229,6 +249,7 @@ class Simulator:
         return f"D{drone.drone_id}-{next_zone}"
 
     def _simulate_turn(self) -> list[str]:
+        """Simulate one turn and return the movements made during it."""
         movements: list[str] = []
         zone_occupancy = self._build_zone_occupancy()
         connection_usage: dict[tuple[str, str], int] = {}
@@ -287,9 +308,11 @@ class Simulator:
         return movements
 
     def _format_turn_output(self, movements: list[str]) -> str:
+        """Format the movements of one turn as an output line."""
         return " ".join(movements)
 
     def run(self) -> list[str]:
+        """Run the simulation until all drones are delivered."""
         output_lines: list[str] = []
 
         while not self._all_delivered():

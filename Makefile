@@ -5,7 +5,7 @@ MAIN = main.py
 MAP ?= maps/easy/01_linear_path.txt
 MAX_PATHS ?= 5
 
-.PHONY: help install run debug visual visual-debug test lint typecheck clean re
+.PHONY: help install run debug visual visual-debug test lint clean re
 
 help:
 	@echo "Available commands:"

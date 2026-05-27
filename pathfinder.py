@@ -5,11 +5,14 @@ from schemas import ZoneType
 
 
 class Pathfinder:
+    """Find one or more valid paths through a graph."""
 
     def __init__(self, graph: Graph) -> None:
+        """Initialize the pathfinder with a graph."""
         self.graph: Graph = graph
 
     def find_shortest_path(self) -> list[str]:
+        """Find the shortest path from the start zone to the end zone."""
         start = self.graph.start_name
         end = self.graph.end_name
 
@@ -22,6 +25,8 @@ class Pathfinder:
         return self._dijkstra(start, end)
 
     def find_multiple_paths(self, max_paths: int) -> list[list[str]]:
+        """Find multiple compatible paths from the start zone to the end
+        zone."""
         if max_paths <= 0:
             raise ValueError("max_paths must be positive")
 
@@ -41,6 +46,8 @@ class Pathfinder:
         return self._select_best_paths(candidates, max_paths)
 
     def _dijkstra(self, start: str, end: str) -> list[str]:
+        """Find the lowest-cost path between two zones using Dijkstra's
+        algorithm."""
         distances: dict[str, int] = {start: 0}
         priority_scores: dict[str, int] = {start: 0}
         parents: dict[str, str | None] = {start: None}
@@ -89,6 +96,7 @@ class Pathfinder:
         new_distance: int,
         new_priority: int,
     ) -> bool:
+        """Return whether a path should replace the currently known path."""
         if known_distance is None:
             return True
 
@@ -108,6 +116,7 @@ class Pathfinder:
         parents: dict[str, str | None],
         end: str,
     ) -> list[str]:
+        """Reconstruct a path from the parents dictionary."""
 
         path: list[str] = []
         cursor: str | None = end
@@ -127,6 +136,7 @@ class Pathfinder:
         zone_name: str,
         visited: set[str],
     ) -> list[str]:
+        """Return unvisited and reachable neighbors for a zone."""
         valid_neighbors: list[str] = []
 
         for neighbor in self.graph.get_neighbors(zone_name):
@@ -141,6 +151,7 @@ class Pathfinder:
         return valid_neighbors
 
     def _get_priority_penalty(self, zone_name: str) -> int:
+        """Return the priority penalty for a zone."""
         zone = self.graph.get_zone(zone_name)
 
         if zone.zone_type == ZoneType.PRIORITY:
@@ -149,6 +160,8 @@ class Pathfinder:
         return 1
 
     def _find_candidate_paths(self, max_candidates: int) -> list[list[str]]:
+        """Find candidate paths up to the given maximum number of
+        candidates."""
         start = self.graph.start_name
         end = self.graph.end_name
         max_depth = len(self.graph.zones)
@@ -180,6 +193,8 @@ class Pathfinder:
         return candidates
 
     def _sort_neighbors_by_cost(self, neighbors: list[str]) -> list[str]:
+        """Sort reachable neighbors by movement cost, priority penalty,
+        and name."""
         valid_neighbors: list[str] = []
 
         for neighbor in neighbors:
@@ -198,6 +213,7 @@ class Pathfinder:
         )
 
     def _path_total_cost(self, path: list[str]) -> int:
+        """Return the total movement cost of a path."""
         total_cost = 0
 
         for zone_name in path[1:]:
@@ -206,6 +222,7 @@ class Pathfinder:
         return total_cost
 
     def _path_edges(self, path: list[str]) -> set[tuple[str, str]]:
+        """Return the directed edges used by a path."""
         edges: set[tuple[str, str]] = set()
 
         for index in range(len(path) - 1):
@@ -218,6 +235,8 @@ class Pathfinder:
         path: list[str],
         selected_paths: list[list[str]],
     ) -> bool:
+        """Return whether a path conflicts with selected paths by using a
+        reversed edge."""
         path_edges = self._path_edges(path)
 
         for selected_path in selected_paths:
@@ -234,6 +253,7 @@ class Pathfinder:
         path: list[str],
         selected_paths: list[list[str]],
     ) -> int:
+        """Return the number of middle zones shared with selected paths."""
         path_middle = set(path[1:-1])
         score = 0
 
@@ -248,6 +268,8 @@ class Pathfinder:
         path: list[str],
         selected_paths: list[list[str]],
     ) -> int:
+        """Return the selection score of a path compared with selected
+        paths."""
         overlap_penalty = 5
 
         return (
@@ -261,6 +283,7 @@ class Pathfinder:
         candidates: list[list[str]],
         max_paths: int,
     ) -> list[list[str]]:
+        """Select the best compatible paths from a list of candidate paths."""
         selected_paths: list[list[str]] = []
         remaining_paths = candidates.copy()
 
