@@ -78,10 +78,10 @@ class PygameVisualizer:
 
             pygame.display.flip()
 
-        if self.clock is not None:
-            self.clock.tick(self.fps)
+            if self.clock is not None:
+                self.clock.tick(self.fps)
 
-    pygame.quit()
+        pygame.quit()
 
     def _handle_events(
         self,
@@ -125,6 +125,80 @@ class PygameVisualizer:
 
         return running, frame_index, paused
 
+    def _draw_connection_capacities(self) -> None:
+        """Draw max link capacity on each connection."""
+        if self.screen is None or self.small_font is None:
+            return
+
+        for connection in self.graph.connections_list:
+            left = self.graph.get_zone(connection.left)
+            right = self.graph.get_zone(connection.right)
+
+            left_x, left_y = self._to_screen(left.x, left.y)
+            right_x, right_y = self._to_screen(right.x, right.y)
+
+            mid_x = (left_x + right_x) // 2
+            mid_y = (left_y + right_y) // 2
+
+            label = f"L{connection.max_link_capacity}"
+
+            text = self.small_font.render(label, True, (20, 20, 20))
+            rect = text.get_rect(center=(mid_x, mid_y))
+            background = rect.inflate(8, 4)
+
+            pygame.draw.rect(
+                self.screen,
+                (245, 247, 250),
+                background,
+                border_radius=4,
+            )
+
+            self.screen.blit(text, rect)
+
+    def _draw_zone_type_badge(
+        self,
+        zone_name: str,
+        x: int,
+        y: int,
+        radius: int,
+    ) -> None:
+        """Draw restricted or priority badge on a zone."""
+        if self.screen is None or self.small_font is None:
+            return
+
+        zone = self.graph.get_zone(zone_name)
+
+        if zone.zone_type == ZoneType.RESTRICTED:
+            label = "R"
+            color = self._rgb("#e67e22")
+        elif zone.zone_type == ZoneType.PRIORITY:
+            label = "P"
+            color = self._rgb("#f1c40f")
+        else:
+            return
+
+        badge_x = x + radius
+        badge_y = y - radius
+
+        pygame.draw.circle(
+            self.screen,
+            color,
+            (badge_x, badge_y),
+            10,
+        )
+        pygame.draw.circle(
+            self.screen,
+            (30, 30, 30),
+            (badge_x, badge_y),
+            10,
+            1,
+        )
+
+        text = self.small_font.render(label, True, (20, 20, 20))
+        rect = text.get_rect(center=(badge_x, badge_y))
+
+        self.screen.blit(text, rect)
+
     def _draw_scene(
         self,
         history: list[dict[int, str]],
@@ -143,11 +217,11 @@ class PygameVisualizer:
         if paths is not None:
             self._draw_paths(paths)
 
+        self._draw_connection_capacities()
         self._draw_zones()
         self._draw_drones(history[frame_index])
         self._draw_hud(frame_index, len(history), paused)
         self._draw_controls()
-        self._draw_legend()
 
     def _compute_transform(self) -> None:
         """Compute map coordinate to screen coordinate transform."""
@@ -228,6 +302,25 @@ class PygameVisualizer:
                     5,
                 )
 
+    def _draw_zone_capacity(
+        self,
+        zone_name: str,
+        x: int,
+        y: int,
+        radius: int,
+    ) -> None:
+        """Draw zone max drone capacity."""
+        if self.screen is None or self.small_font is None:
+            return
+
+        zone = self.graph.get_zone(zone_name)
+        label = f"max:{zone.max_drones}"
+
+        text = self.small_font.render(label, True, (60, 60, 60))
+        rect = text.get_rect(center=(x, y + radius + 14))
+
+        self.screen.blit(text, rect)
+
     def _draw_zones(self) -> None:
         """Draw all zones."""
         if self.screen is None:
@@ -256,6 +349,8 @@ class PygameVisualizer:
             )
 
             self._draw_zone_label(zone_name, x, y, radius)
+            self._draw_zone_capacity(zone_name, x, y, radius)
+            self._draw_zone_type_badge(zone_name, x, y, radius)
 
     def _draw_zone_label(
         self,
@@ -419,31 +514,6 @@ class PygameVisualizer:
             self.screen.blit(surface, (20, y))
             y += 20
 
-    def _draw_legend(self) -> None:
-        """Draw zone type legend."""
-        if self.screen is None or self.small_font is None:
-            return
-
-        items = [
-            ("normal", self._rgb("#3498db")),
-            ("priority", self._rgb("#f1c40f")),
-            ("restricted", self._rgb("#e67e22")),
-            ("blocked", self._rgb("#e74c3c")),
-            ("start/end", self._rgb("#2ecc71")),
-            ("drone", (15, 23, 42)),
-        ]
-
-        x = self.width - 180
-        y = 20
-
-        for label, color in items:
-            pygame.draw.circle(self.screen, color, (x, y + 8), 8)
-
-            text = self.small_font.render(label, True, (30, 30, 30))
-            self.screen.blit(text, (x + 18, y))
-
-            y += 24
-
     def _get_zone_color(self, zone_name: str) -> tuple[int, int, int]:
         """Return RGB color for a zone."""
         if self.graph.is_start(zone_name):
@@ -469,7 +539,8 @@ class PygameVisualizer:
 
         return self._rgb("#3498db")
 
-    def _get_custom_color(self, color_name: str) -> tuple[int, int, int] | None:
+    def _get_custom_color(self, color_name: str
+                          ) -> tuple[int, int, int] | None:
         """Convert map color names to RGB colors."""
         colors = {
             "none": None,
