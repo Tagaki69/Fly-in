@@ -5,7 +5,6 @@ from graph import Graph
 from parser import parse_file
 from pathfinder import Pathfinder
 from simulator import Simulator
-from visualizer import PygameVisualizer
 
 
 def print_parsed_map(graph: Graph) -> None:
@@ -68,6 +67,8 @@ def run_visualizer(
     simulator: Simulator,
 ) -> None:
     """Run Pygame visualizer."""
+    from visualizer import PygameVisualizer
+
     visualizer = PygameVisualizer(graph)
     visualizer.run(
         history=simulator.history,
@@ -133,10 +134,7 @@ def main() -> None:
 
         print_simulation(output_lines, args.debug)
 
-    except FileNotFoundError as error:
-        print(error)
-        sys.exit(1)
-    except ValueError as error:
+    except (FileNotFoundError, PermissionError, ValueError) as error:
         print(error)
         sys.exit(1)
 

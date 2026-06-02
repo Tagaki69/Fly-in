@@ -19,6 +19,7 @@ class PygameVisualizer:
         self.drone_radius: int = 8
         self.fps: int = 60
         self.frame_delay: int = 700
+        self.max_visual_coordinate: int = 1_000_000
 
         self.screen: pygame.Surface | None = None
         self.clock: pygame.time.Clock | None = None
@@ -28,6 +29,19 @@ class PygameVisualizer:
         self.scale: float = 1.0
         self.offset_x: float = 0.0
         self.offset_y: float = 0.0
+
+    def _validate_visual_coordinates(self) -> None:
+        """Ensure coordinates can safely be displayed by the visualizer."""
+        for zone_name, zone in self.graph.zones.items():
+            if abs(zone.x) > self.max_visual_coordinate:
+                raise ValueError(
+                    f"coordinate x is too large for visualizer: {zone_name}"
+                )
+
+            if abs(zone.y) > self.max_visual_coordinate:
+                raise ValueError(
+                    f"coordinate y is too large for visualizer: {zone_name}"
+                )
 
     def run(
         self,
@@ -46,6 +60,7 @@ class PygameVisualizer:
         self.font = pygame.font.SysFont("arial", 16)
         self.small_font = pygame.font.SysFont("arial", 13)
 
+        self._validate_visual_coordinates()
         self._compute_transform()
 
         running = True
@@ -517,17 +532,18 @@ class PygameVisualizer:
 
     def _get_zone_color(self, zone_name: str) -> tuple[int, int, int]:
         """Return RGB color for a zone."""
-        if self.graph.is_start(zone_name):
-            return self._rgb("#2ecc71")
-
-        if self.graph.is_end(zone_name):
-            return self._rgb("#2ecc71")
 
         zone = self.graph.get_zone(zone_name)
         custom_color = self._get_custom_color(zone.color)
 
         if custom_color is not None:
             return custom_color
+
+        if self.graph.is_start(zone_name):
+            return self._rgb("#2ecc71")
+
+        if self.graph.is_end(zone_name):
+            return self._rgb("#2ecc71")
 
         if zone.zone_type == ZoneType.BLOCKED:
             return self._rgb("#e74c3c")
@@ -540,29 +556,20 @@ class PygameVisualizer:
 
         return self._rgb("#3498db")
 
-    def _get_custom_color(self, color_name: str
-                          ) -> tuple[int, int, int] | None:
+    def _get_custom_color(self, color_name:
+                          str) -> tuple[int, int, int] | None:
         """Convert map color names to RGB colors."""
-        colors = {
-            "none": None,
-            "green": self._rgb("#2ecc71"),
-            "blue": self._rgb("#3498db"),
-            "red": self._rgb("#e74c3c"),
-            "orange": self._rgb("#e67e22"),
-            "purple": self._rgb("#9b59b6"),
-            "black": self._rgb("#2c3e50"),
-            "brown": self._rgb("#8e5a2a"),
-            "maroon": self._rgb("#800000"),
-            "gold": self._rgb("#f1c40f"),
-            "darkred": self._rgb("#8b0000"),
-            "violet": self._rgb("#8e44ad"),
-            "crimson": self._rgb("#dc143c"),
-            "rainbow": self._rgb("#ff66cc"),
-            "cyan": self._rgb("#00bcd4"),
-            "yellow": self._rgb("#f1c40f"),
-        }
+        normalized_name = color_name.strip().lower()
 
-        return colors.get(color_name.strip().lower())
+        if normalized_name == "none":
+            return None
+
+        try:
+            color = pygame.Color(normalized_name)
+        except ValueError:
+            return None
+
+        return color.r, color.g, color.b
 
     def _get_path_color(self, index: int) -> tuple[int, int, int]:
         """Return RGB color for a selected path."""

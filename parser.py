@@ -1,6 +1,7 @@
 from typing import Literal, Any
 from pydantic import ValidationError
 from schemas import FlyinConfig, ZoneSchema, ConnectionSchema, ParsedMap
+from schemas import ZoneType
 
 
 def _read_clean_lines(filename: str) -> list[tuple[int, str]]:
@@ -14,6 +15,9 @@ def _read_clean_lines(filename: str) -> list[tuple[int, str]]:
                     clean_lines.append((line_number, line))
     except FileNotFoundError as error:
         raise FileNotFoundError(f"Error: {filename} not found") from error
+    except PermissionError as error:
+        raise PermissionError(f"Error: permission denied: "
+                              f"{filename}") from error
 
     return clean_lines
 
@@ -257,6 +261,11 @@ def _validate_result(
 
     if start_name == end_name:
         raise ValueError("start_hub and end_hub must be different")
+    if zones[start_name].zone_type == ZoneType.BLOCKED:
+        raise ValueError("start_hub must not be blocked")
+
+    if zones[end_name].zone_type == ZoneType.BLOCKED:
+        raise ValueError("end_hub must not be blocked")
 
     for connection in connections:
         if connection.left not in zones:
