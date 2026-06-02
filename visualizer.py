@@ -1,6 +1,6 @@
 import math
 
-import pygame  # type: ignore[import-untyped]
+import pygame
 
 from graph import Graph
 from schemas import ZoneType

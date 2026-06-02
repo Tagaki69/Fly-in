@@ -11,7 +11,9 @@ class Drone:
         self.path: list[str] = path
         self.path_index: int = 0
         self.delivered: bool = False
-        self.wait_turns: int = 0
+        self.in_transit: bool = False
+        self.transit_from: str | None = None
+        self.transit_to: str | None = None
 
 
 class Simulator:
@@ -35,6 +37,10 @@ class Simulator:
 
         self._create_drones()
         self.history.append(self._capture_positions())
+
+    def _get_connection_name(self, left: str, right: str) -> str:
+        """Return the display name of a connection."""
+        return f"{left}-{right}"
 
     def _capture_positions(self) -> dict[int, str]:
         """Capture the current zone of each drone."""
@@ -118,7 +124,14 @@ class Simulator:
             if drone.delivered:
                 continue
 
-            zone_name = self._get_current_zone(drone)
+            if drone.in_transit:
+                if drone.transit_to is None:
+                    raise ValueError(
+                        f"drone D{drone.drone_id} has invalid transit state"
+                    )
+                zone_name = drone.transit_to
+            else:
+                zone_name = self._get_current_zone(drone)
 
             if self.graph.is_start(zone_name):
                 continue
@@ -198,7 +211,7 @@ class Simulator:
         if drone.delivered:
             return False
 
-        if drone.wait_turns > 0:
+        if drone.in_transit:
             return False
 
         next_zone = self._get_next_zone(drone)
@@ -232,19 +245,30 @@ class Simulator:
         return current_count < next_zone_data.max_drones
 
     def _move_drone(self, drone: Drone) -> str:
-        """Move a drone to its next zone and return the movement output."""
+        """Move a drone or start a restricted-zone transit."""
         next_zone = self._get_next_zone(drone)
 
         if next_zone is None:
             raise ValueError(f"drone D{drone.drone_id} cannot move")
 
+        current_zone = self._get_current_zone(drone)
+
+        if self._is_restricted_zone(next_zone):
+            drone.in_transit = True
+            drone.transit_from = current_zone
+            drone.transit_to = next_zone
+
+            connection_name = self._get_connection_name(
+                current_zone,
+                next_zone,
+            )
+
+            return f"D{drone.drone_id}-{connection_name}"
+
         drone.path_index += 1
 
         if self.graph.is_end(next_zone):
             drone.delivered = True
-            drone.wait_turns = 0
-        elif self._is_restricted_zone(next_zone):
-            drone.wait_turns = 1
 
         return f"D{drone.drone_id}-{next_zone}"
 
@@ -259,12 +283,13 @@ class Simulator:
             if drone.delivered:
                 continue
 
-            current_zone = self._get_current_zone(drone)
-
-            if drone.wait_turns > 0:
-                drone.wait_turns -= 1
+            if drone.in_transit:
+                movement = self._finish_transit(drone)
+                movements.append(movement)
                 self.last_turn_had_progress = True
                 continue
+
+            current_zone = self._get_current_zone(drone)
 
             self._decrease_zone_occupancy(
                 current_zone,
@@ -291,12 +316,18 @@ class Simulator:
                     connection_usage,
                 )
 
-                new_zone = self._get_current_zone(drone)
+                if drone.in_transit:
+                    self._increase_zone_occupancy(
+                        next_zone,
+                        zone_occupancy,
+                    )
+                else:
+                    new_zone = self._get_current_zone(drone)
 
-                self._increase_zone_occupancy(
-                    new_zone,
-                    zone_occupancy,
-                )
+                    self._increase_zone_occupancy(
+                        new_zone,
+                        zone_occupancy,
+                    )
             else:
                 self._increase_zone_occupancy(
                     current_zone,
@@ -306,6 +337,35 @@ class Simulator:
         self.turn_count += 1
 
         return movements
+
+    def _finish_transit(self, drone: Drone) -> str:
+        """Finish a restricted-zone transit and move the drone to its target.
+        """
+        if not drone.in_transit:
+            raise ValueError(f"drone D{drone.drone_id} is not in transit")
+
+        if drone.transit_to is None:
+            raise ValueError(
+                f"drone D{drone.drone_id} has no transit destination"
+            )
+
+        destination = drone.transit_to
+        expected_next_zone = self._get_next_zone(drone)
+
+        if expected_next_zone != destination:
+            raise ValueError(
+                f"drone D{drone.drone_id} transit destination is invalid"
+            )
+
+        drone.path_index += 1
+        drone.in_transit = False
+        drone.transit_from = None
+        drone.transit_to = None
+
+        if self.graph.is_end(destination):
+            drone.delivered = True
+
+        return f"D{drone.drone_id}-{destination}"
 
     def _format_turn_output(self, movements: list[str]) -> str:
         """Format the movements of one turn as an output line."""
