@@ -49,13 +49,21 @@ def print_paths(paths: list[list[str]]) -> None:
         print(f"path {index}: {' -> '.join(path)}")
 
 
-def print_simulation(output_lines: list[str], debug: bool) -> None:
+def print_simulation(
+    output_lines: list[str],
+    debug: bool,
+    simulator: Simulator,
+) -> None:
     """Print simulation output."""
     if debug:
         print("\n=== SIMULATION ===")
 
-    for line in output_lines:
+    for index, line in enumerate(output_lines):
         print(line)
+
+        if debug:
+            for debug_line in simulator.format_turn_debug(index):
+                print(debug_line)
 
     if debug:
         print(f"\nTotal turns: {len(output_lines)}")
@@ -132,7 +140,7 @@ def main() -> None:
         if args.visual:
             run_visualizer(graph, paths, simulator)
 
-        print_simulation(output_lines, args.debug)
+        print_simulation(output_lines, args.debug, simulator)
 
     except (FileNotFoundError, PermissionError, ValueError) as error:
         print(error)

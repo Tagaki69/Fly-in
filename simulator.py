@@ -33,7 +33,8 @@ class Simulator:
         self.turn_count: int = 0
         self.last_turn_had_progress: bool = False
 
-        self.history: list[dict[int, str]] = []
+        self.history: list[dict[int, dict[str, str]]] = []
+        self.turn_debug_history: list[dict[str, object]] = []
 
         self._create_drones()
         self.history.append(self._capture_positions())
@@ -42,12 +43,27 @@ class Simulator:
         """Return the display name of a connection."""
         return f"{left}-{right}"
 
-    def _capture_positions(self) -> dict[int, str]:
-        """Capture the current zone of each drone."""
-        positions: dict[int, str] = {}
+    def _capture_positions(self) -> dict[int, dict[str, str]]:
+        """Capture the current visual state of each drone."""
+        positions: dict[int, dict[str, str]] = {}
 
         for drone in self.drones:
-            positions[drone.drone_id] = self._get_current_zone(drone)
+            if drone.in_transit:
+                if drone.transit_from is None or drone.transit_to is None:
+                    raise ValueError(
+                        f"drone D{drone.drone_id} has invalid transit state"
+                    )
+
+                positions[drone.drone_id] = {
+                    "state": "transit",
+                    "from": drone.transit_from,
+                    "to": drone.transit_to,
+                }
+            else:
+                positions[drone.drone_id] = {
+                    "state": "zone",
+                    "zone": self._get_current_zone(drone),
+                }
 
         return positions
 
@@ -89,6 +105,21 @@ class Simulator:
                 return False
 
         return True
+
+    def _save_turn_debug(
+        self,
+        movements: list[str],
+        zone_occupancy: dict[str, int],
+        connection_usage: dict[tuple[str, str], int],
+    ) -> None:
+        """Save internal debug data for one simulation turn."""
+        self.turn_debug_history.append(
+            {
+                "movements": movements.copy(),
+                "zone_occupancy": zone_occupancy.copy(),
+                "connection_usage": connection_usage.copy(),
+            }
+        )
 
     def _get_current_zone(self, drone: Drone) -> str:
         """Return the current zone of a drone."""
@@ -335,6 +366,11 @@ class Simulator:
                 )
 
         self.turn_count += 1
+        self._save_turn_debug(
+            movements,
+            zone_occupancy,
+            connection_usage,
+        )
 
         return movements
 
@@ -385,3 +421,19 @@ class Simulator:
             self.history.append(self._capture_positions())
 
         return output_lines
+
+    def format_turn_debug(self, turn_index: int) -> list[str]:
+        """Format basic debug information for one turn."""
+        if turn_index >= len(self.turn_debug_history):
+            return []
+
+        turn_debug = self.turn_debug_history[turn_index]
+        movements = turn_debug["movements"]
+
+        if not isinstance(movements, list):
+            return []
+
+        return [
+            f"--- Turn {turn_index + 1} debug ---",
+            f"movements: {len(movements)}",
+        ]
