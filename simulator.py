@@ -33,7 +33,7 @@ class Simulator:
         self.turn_count: int = 0
         self.last_turn_had_progress: bool = False
 
-        self.history: list[dict[int, dict[str, str]]] = []
+        self.history: list[dict[int, str]] = []
         self.turn_debug_history: list[dict[str, object]] = []
 
         self._create_drones()
@@ -43,27 +43,12 @@ class Simulator:
         """Return the display name of a connection."""
         return f"{left}-{right}"
 
-    def _capture_positions(self) -> dict[int, dict[str, str]]:
-        """Capture the current visual state of each drone."""
-        positions: dict[int, dict[str, str]] = {}
+    def _capture_positions(self) -> dict[int, str]:
+        """Capture the current zone of each drone."""
+        positions: dict[int, str] = {}
 
         for drone in self.drones:
-            if drone.in_transit:
-                if drone.transit_from is None or drone.transit_to is None:
-                    raise ValueError(
-                        f"drone D{drone.drone_id} has invalid transit state"
-                    )
-
-                positions[drone.drone_id] = {
-                    "state": "transit",
-                    "from": drone.transit_from,
-                    "to": drone.transit_to,
-                }
-            else:
-                positions[drone.drone_id] = {
-                    "state": "zone",
-                    "zone": self._get_current_zone(drone),
-                }
+            positions[drone.drone_id] = self._get_current_zone(drone)
 
         return positions
 

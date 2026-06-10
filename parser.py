@@ -5,6 +5,7 @@ from schemas import ZoneType
 
 
 def _read_clean_lines(filename: str) -> list[tuple[int, str]]:
+    """Read a file and return non-empty lines without comments."""
     clean_lines: list[tuple[int, str]] = []
 
     try:
@@ -32,6 +33,7 @@ LineType = Literal[
 
 
 def _get_line_type(line: str) -> LineType:
+    """Return the parser type matching a map instruction line."""
     if line.startswith("nb_drones:"):
         return "nb_drones"
     if line.startswith("start_hub:"):
@@ -46,6 +48,7 @@ def _get_line_type(line: str) -> LineType:
 
 
 def _parse_nb_drones(line: str) -> FlyinConfig:
+    """Parse and validate the drone count configuration line."""
     prefix = "nb_drones:"
 
     if not line.startswith(prefix):
@@ -69,6 +72,7 @@ def _parse_nb_drones(line: str) -> FlyinConfig:
 
 
 def _parse_metadata(line: str) -> tuple[str, dict[str, str]]:
+    """Split a line body from its optional metadata block."""
     line = line.strip()
 
     if "[" not in line and "]" not in line:
@@ -115,6 +119,7 @@ def _parse_metadata(line: str) -> tuple[str, dict[str, str]]:
 
 
 def _parse_zone(line: str, line_type: LineType) -> ZoneSchema:
+    """Parse and validate a start, end, or regular zone line."""
     if line_type not in ("start_hub", "end_hub", "hub"):
         raise ValueError("line type is not a zone")
 
@@ -173,6 +178,7 @@ def _parse_zone(line: str, line_type: LineType) -> ZoneSchema:
 
 
 def _parse_connection(line: str) -> ConnectionSchema:
+    """Parse and validate a connection line."""
     body, metadata = _parse_metadata(line)
     allowed_metadata = {"max_link_capacity"}
     unknown_keys = set(metadata) - allowed_metadata
@@ -222,6 +228,7 @@ def _parse_connection(line: str) -> ConnectionSchema:
 
 
 def _make_connection_key(left: str, right: str) -> tuple[str, str]:
+    """Create a normalized key for an undirected connection."""
     left = left.strip()
     right = right.strip()
 
@@ -243,6 +250,7 @@ def _validate_result(
     end_name: str | None,
     connections: list[ConnectionSchema],
 ) -> ParsedMap:
+    """Validate parsed map data and build the final ParsedMap object."""
 
     if config is None:
         raise ValueError("missing nb_drones")
@@ -288,6 +296,7 @@ def _validate_result(
 
 
 def parse_file(filename: str) -> ParsedMap:
+    """Parse a Fly-in map file and return a validated ParsedMap."""
     clean_lines = _read_clean_lines(filename)
 
     if not clean_lines:

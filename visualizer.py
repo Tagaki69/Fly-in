@@ -45,7 +45,7 @@ class PygameVisualizer:
 
     def run(
         self,
-        history: list[dict[int, dict[str, str]]],
+        history: list[dict[int, str]],
         paths: list[list[str]] | None = None,
     ) -> None:
         """Run the Pygame animation loop."""
@@ -217,7 +217,7 @@ class PygameVisualizer:
 
     def _draw_scene(
         self,
-        history: list[dict[int, dict[str, str]]],
+        history: list[dict[int, str]],
         paths: list[list[str]] | None,
         frame_index: int,
         paused: bool,
@@ -392,19 +392,8 @@ class PygameVisualizer:
 
         self.screen.blit(text, rect)
 
-    def _draw_drones(self, positions: dict[int, dict[str, str]]) -> None:
-        """Draw drones either on zones or in transit on connections."""
-        if self.screen is None:
-            return
-
-        self._draw_zone_drones(positions)
-        self._draw_transit_drones(positions)
-
-    def _draw_zone_drones(
-        self,
-        positions: dict[int, dict[str, str]],
-    ) -> None:
-        """Draw drones currently located on zones."""
+    def _draw_drones(self, positions: dict[int, str]) -> None:
+        """Draw drones at their current positions."""
         if self.screen is None:
             return
 
@@ -441,90 +430,15 @@ class PygameVisualizer:
 
     def _group_drones_by_zone(
         self,
-        positions: dict[int, dict[str, str]],
+        positions: dict[int, str],
     ) -> dict[str, list[int]]:
         """Group drones by their current zone."""
         grouped: dict[str, list[int]] = {}
 
-        for drone_id, position in positions.items():
-            if position.get("state") != "zone":
-                continue
-
-            zone_name = position.get("zone")
-
-            if zone_name is None:
-                continue
-
+        for drone_id, zone_name in positions.items():
             grouped.setdefault(zone_name, []).append(drone_id)
 
         return grouped
-
-    def _group_drones_by_connection(
-        self,
-        positions: dict[int, dict[str, str]],
-    ) -> dict[tuple[str, str], list[int]]:
-        """Group drones currently in transit by connection."""
-        grouped: dict[tuple[str, str], list[int]] = {}
-
-        for drone_id, position in positions.items():
-            if position.get("state") != "transit":
-                continue
-
-            left = position.get("from")
-            right = position.get("to")
-
-            if left is None or right is None:
-                continue
-
-            grouped.setdefault((left, right), []).append(drone_id)
-
-        return grouped
-
-    def _draw_transit_drones(
-        self,
-        positions: dict[int, dict[str, str]],
-    ) -> None:
-        """Draw drones currently moving on connections."""
-        if self.screen is None:
-            return
-
-        grouped = self._group_drones_by_connection(positions)
-
-        for connection, drone_ids in grouped.items():
-            left_name, right_name = connection
-            left = self.graph.get_zone(left_name)
-            right = self.graph.get_zone(right_name)
-
-            start_x, start_y = self._to_screen(left.x, left.y)
-            end_x, end_y = self._to_screen(right.x, right.y)
-
-            drone_count = len(drone_ids)
-
-            for index, drone_id in enumerate(drone_ids):
-                drone_x, drone_y = self._get_transit_drone_position(
-                    start_x,
-                    start_y,
-                    end_x,
-                    end_y,
-                    index,
-                    drone_count,
-                )
-
-                pygame.draw.circle(
-                    self.screen,
-                    (15, 23, 42),
-                    (drone_x, drone_y),
-                    self.drone_radius,
-                )
-                pygame.draw.circle(
-                    self.screen,
-                    (255, 170, 0),
-                    (drone_x, drone_y),
-                    self.drone_radius,
-                    2,
-                )
-
-                self._draw_drone_label(drone_id, drone_x, drone_y)
 
     def _get_drone_position(
         self,
@@ -544,40 +458,6 @@ class PygameVisualizer:
         offset_y = int(math.sin(angle) * distance)
 
         return base_x + offset_x, base_y + offset_y
-
-    def _get_transit_drone_position(
-        self,
-        start_x: int,
-        start_y: int,
-        end_x: int,
-        end_y: int,
-        index: int,
-        count: int,
-    ) -> tuple[int, int]:
-        """Return a drone position in the middle of a connection."""
-        middle_x = (start_x + end_x) // 2
-        middle_y = (start_y + end_y) // 2
-
-        if count == 1:
-            return middle_x, middle_y
-
-        dx = end_x - start_x
-        dy = end_y - start_y
-        length = math.sqrt(dx * dx + dy * dy)
-
-        if length == 0:
-            return middle_x, middle_y
-
-        perpendicular_x = -dy / length
-        perpendicular_y = dx / length
-
-        spacing = 18
-        offset = (index - (count - 1) / 2) * spacing
-
-        drone_x = int(middle_x + perpendicular_x * offset)
-        drone_y = int(middle_y + perpendicular_y * offset)
-
-        return drone_x, drone_y
 
     def _draw_drone_label(
         self,
