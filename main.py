@@ -8,7 +8,12 @@ from simulator import Simulator
 
 
 def print_parsed_map(graph: Graph) -> None:
-    """Print parsed map data."""
+    """
+    Print parsed map data.
+
+    Args:
+        graph (Graph): The graph representing the map.
+    """
     print("=== CONFIG ===")
     print(f"nb_drones: {graph.nb_drones}")
 
@@ -36,13 +41,23 @@ def print_parsed_map(graph: Graph) -> None:
 
 
 def print_graph(graph: Graph) -> None:
-    """Print graph adjacency list."""
+    """
+    Print graph adjacency list.
+
+    Args:
+        graph (Graph): The graph representing the map.
+    """
     print("\n=== GRAPH ADJACENCY ===")
     graph.display()
 
 
 def print_paths(paths: list[list[str]]) -> None:
-    """Print selected paths."""
+    """
+    Print selected paths.
+
+    Args:
+        paths (list[list[str]]): The list of paths to print.
+    """
     print("\n=== PATHS ===")
 
     for index, path in enumerate(paths, start=1):
@@ -54,7 +69,14 @@ def print_simulation(
     debug: bool,
     simulator: Simulator,
 ) -> None:
-    """Print simulation output."""
+    """
+    Print simulation output.
+
+    Args:
+        output_lines (list[str]): The output lines of the simulation.
+        debug (bool): Whether debug mode is enabled.
+        simulator (Simulator): The simulator instance.
+    """
     if debug:
         print("\n=== SIMULATION ===")
 
@@ -74,7 +96,14 @@ def run_visualizer(
     paths: list[list[str]],
     simulator: Simulator,
 ) -> None:
-    """Run Pygame visualizer."""
+    """
+    Run Pygame visualizer.
+
+    Args:
+        graph (Graph): The graph representing the map.
+        paths (list[list[str]]): The list of selected paths.
+        simulator (Simulator): The simulator instance.
+    """
     from visualizer import PygameVisualizer
 
     visualizer = PygameVisualizer(graph)
@@ -85,7 +114,12 @@ def run_visualizer(
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command line arguments."""
+    """
+    Parse command line arguments.
+
+    Returns:
+        argparse.Namespace: The parsed command line arguments.
+    """
     parser = argparse.ArgumentParser(
         description="Run Fly-in drone simulation.",
     )
@@ -118,7 +152,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """Run parser, graph builder, pathfinder and simulator."""
+    """
+    Run parser, graph builder, pathfinder and simulator.
+    """
     args = parse_args()
 
     try:

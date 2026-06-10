@@ -7,10 +7,35 @@ from schemas import ZoneType
 
 
 class PygameVisualizer:
-    """Display and animate a Fly-in simulation with Pygame."""
+    """
+    Display and animate a Fly-in simulation with Pygame.
+
+    Attributes:
+        graph (Graph): The graph representing the map.
+        width (int): Window width.
+        height (int): Window height.
+        padding (int): Map margin size.
+        node_radius (int): Draw radius of a zone.
+        drone_radius (int): Draw radius of a drone.
+        fps (int): Visualizer FPS.
+        frame_delay (int): Delay in milliseconds between turns.
+        max_visual_coordinate (int): Max allowed map coordinates.
+        screen (pygame.Surface | None): The Pygame screen surface.
+        clock (pygame.time.Clock | None): The Pygame clock.
+        font (pygame.font.Font | None): Main font instance.
+        small_font (pygame.font.Font | None): Small font instance.
+        scale (float): Scaling factor for map coordinates.
+        offset_x (float): Screen transformation offset X.
+        offset_y (float): Screen transformation offset Y.
+    """
 
     def __init__(self, graph: Graph) -> None:
-        """Initialize the visualizer with graph data and display settings."""
+        """
+        Initialize the visualizer with graph data and settings.
+
+        Args:
+            graph (Graph): The graph representing the map.
+        """
         self.graph: Graph = graph
         self.width: int = 1280
         self.height: int = 800
@@ -31,7 +56,9 @@ class PygameVisualizer:
         self.offset_y: float = 0.0
 
     def _validate_visual_coordinates(self) -> None:
-        """Ensure coordinates can safely be displayed by the visualizer."""
+        """
+        Ensure coordinates can safely be displayed by the visualizer.
+        """
         for zone_name, zone in self.graph.zones.items():
             if abs(zone.x) > self.max_visual_coordinate:
                 raise ValueError(
@@ -48,7 +75,13 @@ class PygameVisualizer:
         history: list[dict[int, str]],
         paths: list[list[str]] | None = None,
     ) -> None:
-        """Run the Pygame animation loop."""
+        """
+        Run the Pygame animation loop.
+
+        Args:
+            history (list[dict[int, str]]): Drone positions per turn.
+            paths (list[list[str]] | None): Selected paths to draw.
+        """
         if not history:
             raise ValueError("visualizer needs simulation history")
 
@@ -105,7 +138,17 @@ class PygameVisualizer:
         history_length: int,
         paused: bool,
     ) -> tuple[bool, int, bool]:
-        """Handle keyboard and window events."""
+        """
+        Handle keyboard and window events.
+
+        Args:
+            frame_index (int): The current turn frame index.
+            history_length (int): Total number of turns.
+            paused (bool): Whether the animation is paused.
+
+        Returns:
+            tuple[bool, int, bool]: Running, new frame index, and paused.
+        """
         running = True
 
         for event in pygame.event.get():
@@ -142,7 +185,9 @@ class PygameVisualizer:
         return running, frame_index, paused
 
     def _draw_connection_capacities(self) -> None:
-        """Draw max link capacity on each connection."""
+        """
+        Draw max link capacity on each connection.
+        """
         if self.screen is None or self.small_font is None:
             return
 
@@ -178,7 +223,15 @@ class PygameVisualizer:
         y: int,
         radius: int,
     ) -> None:
-        """Draw restricted or priority badge on a zone."""
+        """
+        Draw restricted or priority badge on a zone.
+
+        Args:
+            zone_name (str): The name of the zone.
+            x (int): The X screen coordinate.
+            y (int): The Y screen coordinate.
+            radius (int): The zone circle radius.
+        """
         if self.screen is None or self.small_font is None:
             return
 
@@ -222,7 +275,15 @@ class PygameVisualizer:
         frame_index: int,
         paused: bool,
     ) -> None:
-        """Draw the full current frame."""
+        """
+        Draw the full current frame.
+
+        Args:
+            history (list[dict[int, str]]): The simulation history.
+            paths (list[list[str]] | None): Selected paths to draw.
+            frame_index (int): The index of the frame.
+            paused (bool): Whether the animation is paused.
+        """
         if self.screen is None:
             return
 
@@ -240,7 +301,9 @@ class PygameVisualizer:
         self._draw_controls()
 
     def _compute_transform(self) -> None:
-        """Compute map coordinate to screen coordinate transform."""
+        """
+        Compute map coordinate to screen coordinate transform.
+        """
         xs = [zone.x for zone in self.graph.zones.values()]
         ys = [zone.y for zone in self.graph.zones.values()]
 
@@ -263,14 +326,25 @@ class PygameVisualizer:
         self.offset_y = self.padding + max_y * self.scale
 
     def _to_screen(self, x: int, y: int) -> tuple[int, int]:
-        """Convert map coordinates to screen coordinates."""
+        """
+        Convert map coordinates to screen coordinates.
+
+        Args:
+            x (int): Map X coordinate.
+            y (int): Map Y coordinate.
+
+        Returns:
+            tuple[int, int]: The screen X and Y coordinates.
+        """
         screen_x = int(x * self.scale + self.offset_x)
         screen_y = int(self.offset_y - y * self.scale)
 
         return screen_x, screen_y
 
     def _draw_connections(self) -> None:
-        """Draw all map connections."""
+        """
+        Draw all map connections.
+        """
         if self.screen is None:
             return
 
@@ -290,7 +364,12 @@ class PygameVisualizer:
             )
 
     def _draw_paths(self, paths: list[list[str]]) -> None:
-        """Draw selected paths with stronger colors."""
+        """
+        Draw selected paths with stronger colors.
+
+        Args:
+            paths (list[list[str]]): The paths to draw.
+        """
         if self.screen is None:
             return
 
@@ -325,7 +404,15 @@ class PygameVisualizer:
         y: int,
         radius: int,
     ) -> None:
-        """Draw zone max drone capacity."""
+        """
+        Draw zone max drone capacity.
+
+        Args:
+            zone_name (str): The name of the zone.
+            x (int): The X screen coordinate.
+            y (int): The Y screen coordinate.
+            radius (int): The zone circle radius.
+        """
         if self.screen is None or self.small_font is None:
             return
 
@@ -338,7 +425,9 @@ class PygameVisualizer:
         self.screen.blit(text, rect)
 
     def _draw_zones(self) -> None:
-        """Draw all zones."""
+        """
+        Draw all zones.
+        """
         if self.screen is None:
             return
 
@@ -375,7 +464,15 @@ class PygameVisualizer:
         y: int,
         radius: int,
     ) -> None:
-        """Draw a zone label."""
+        """
+        Draw a zone label.
+
+        Args:
+            zone_name (str): The name of the zone.
+            x (int): The X screen coordinate.
+            y (int): The Y screen coordinate.
+            radius (int): The zone circle radius.
+        """
         if self.screen is None or self.small_font is None:
             return
 
@@ -393,7 +490,12 @@ class PygameVisualizer:
         self.screen.blit(text, rect)
 
     def _draw_drones(self, positions: dict[int, str]) -> None:
-        """Draw drones at their current positions."""
+        """
+        Draw drones at their current positions.
+
+        Args:
+            positions (dict[int, str]): Map of drone ID to current zone.
+        """
         if self.screen is None:
             return
 
@@ -432,7 +534,15 @@ class PygameVisualizer:
         self,
         positions: dict[int, str],
     ) -> dict[str, list[int]]:
-        """Group drones by their current zone."""
+        """
+        Group drones by their current zone.
+
+        Args:
+            positions (dict[int, str]): Map of drone ID to current zone.
+
+        Returns:
+            dict[str, list[int]]: Map of zone name to list of drone IDs.
+        """
         grouped: dict[str, list[int]] = {}
 
         for drone_id, zone_name in positions.items():
@@ -447,7 +557,18 @@ class PygameVisualizer:
         index: int,
         count: int,
     ) -> tuple[int, int]:
-        """Return an offset position for a drone inside a zone."""
+        """
+        Return an offset position for a drone inside a zone.
+
+        Args:
+            base_x (int): Screen X coordinate of the zone center.
+            base_y (int): Screen Y coordinate of the zone center.
+            index (int): The drone index within the zone.
+            count (int): Total number of drones in the zone.
+
+        Returns:
+            tuple[int, int]: The offset screen X and Y coordinates.
+        """
         if count == 1:
             return base_x, base_y
 
@@ -465,7 +586,14 @@ class PygameVisualizer:
         x: int,
         y: int,
     ) -> None:
-        """Draw drone id label."""
+        """
+        Draw drone id label.
+
+        Args:
+            drone_id (int): The drone identifier.
+            x (int): The screen X coordinate.
+            y (int): The screen Y coordinate.
+        """
         if self.screen is None or self.small_font is None:
             return
 
@@ -484,7 +612,14 @@ class PygameVisualizer:
         history_length: int,
         paused: bool,
     ) -> None:
-        """Draw turn information."""
+        """
+        Draw turn information.
+
+        Args:
+            frame_index (int): The current frame index.
+            history_length (int): Total number of turns.
+            paused (bool): Whether the animation is paused.
+        """
         if self.screen is None or self.font is None:
             return
 
@@ -511,7 +646,9 @@ class PygameVisualizer:
         self.screen.blit(surface, rect)
 
     def _draw_controls(self) -> None:
-        """Draw keyboard controls."""
+        """
+        Draw keyboard controls.
+        """
         if self.screen is None or self.small_font is None:
             return
 
@@ -531,7 +668,15 @@ class PygameVisualizer:
             y += 20
 
     def _get_zone_color(self, zone_name: str) -> tuple[int, int, int]:
-        """Return RGB color for a zone."""
+        """
+        Return RGB color for a zone.
+
+        Args:
+            zone_name (str): The name of the zone.
+
+        Returns:
+            tuple[int, int, int]: The RGB color of the zone.
+        """
 
         zone = self.graph.get_zone(zone_name)
         custom_color = self._get_custom_color(zone.color)
@@ -556,9 +701,19 @@ class PygameVisualizer:
 
         return self._rgb("#3498db")
 
-    def _get_custom_color(self, color_name:
-                          str) -> tuple[int, int, int] | None:
-        """Convert map color names to RGB colors."""
+    def _get_custom_color(
+        self,
+        color_name: str,
+    ) -> tuple[int, int, int] | None:
+        """
+        Convert map color names to RGB colors.
+
+        Args:
+            color_name (str): The name of the color.
+
+        Returns:
+            tuple[int, int, int] | None: RGB color, or None if not recognized.
+        """
         normalized_name = color_name.strip().lower()
 
         if normalized_name == "none":
@@ -572,7 +727,15 @@ class PygameVisualizer:
         return color.r, color.g, color.b
 
     def _get_path_color(self, index: int) -> tuple[int, int, int]:
-        """Return RGB color for a selected path."""
+        """
+        Return RGB color for a selected path.
+
+        Args:
+            index (int): The index of the path.
+
+        Returns:
+            tuple[int, int, int]: The RGB color.
+        """
         colors = [
             "#1abc9c",
             "#9b59b6",
@@ -587,7 +750,15 @@ class PygameVisualizer:
         return self._rgb(colors[index % len(colors)])
 
     def _rgb(self, hex_color: str) -> tuple[int, int, int]:
-        """Convert hex color to RGB tuple."""
+        """
+        Convert hex color to RGB tuple.
+
+        Args:
+            hex_color (str): The hex color string.
+
+        Returns:
+            tuple[int, int, int]: The RGB color.
+        """
         hex_color = hex_color.lstrip("#")
 
         return (

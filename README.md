@@ -2,95 +2,75 @@
 
 # Fly-in
 
-Fly-in is a Python project that simulates a fleet of autonomous drones moving from a start hub to an end hub through a graph of connected zones.
+Fly-in is a Python project that simulates autonomous drones moving from a start hub to an end hub through a graph of connected zones.
 
-The goal is to move all drones to the destination in as few simulation turns as possible while respecting movement, capacity, routing, and zone constraints.
-
-The project includes:
-
-- a custom map parser;
-- an object-oriented graph representation;
-- a pathfinding system based on weighted path costs;
-- a turn-based simulation engine;
-- support for multiple drones and multiple paths;
-- support for zone and connection capacities;
-- support for special zone types;
-- a Pygame visualizer to display the simulation.
+The goal is to move all drones to the destination in as few turns as possible while respecting movement, routing and capacity constraints.
 
 ---
 
 ## Description
 
-The input map describes a network of zones connected by bidirectional links.
+The program reads a map file describing:
 
-Each drone starts from the `start_hub` and must reach the `end_hub`.
+* the number of drones;
+* one start hub;
+* one end hub;
+* regular hubs;
+* connections between hubs;
+* optional metadata such as capacities, colors and zone types.
 
-At each simulation turn, drones may move to an adjacent connected zone if all constraints allow it.
+Each drone starts at `start_hub` and must reach `end_hub`.
 
-The main constraints handled by this project are:
+At each turn, a drone may move to the next zone of its assigned path if all rules allow it. If the drone cannot move, it waits and does not appear in the output for that turn.
 
-- `max_drones`: maximum number of drones allowed in a zone at the same time;
-- `max_link_capacity`: maximum number of drones allowed to cross the same connection during one turn;
-- `blocked` zones: inaccessible zones;
-- `restricted` zones: zones with an additional movement cost;
-- `priority` zones: preferred zones during pathfinding;
-- simultaneous movements;
-- multiple path allocation;
-- basic deadlock avoidance through path selection and movement checks.
+The project supports:
 
----
+* multiple drones;
+* multiple paths;
+* blocked zones;
+* restricted zones;
+* priority zones;
+* zone capacities with `max_drones`;
+* connection capacities with `max_link_capacity`;
+* turn-by-turn simulation;
+* optional Pygame visualization.
 
-## Project Requirements
+Project architecture:
 
-This project follows the subject requirements:
-
-- Python 3.10 or later;
-- no graph logic library such as `networkx` or `graphlib`;
-- object-oriented design;
-- type hints;
-- `flake8` compliance;
-- `mypy` static type checking;
-- Makefile with common commands;
-- visual representation of the simulation;
-- clear terminal output following the required movement format.
-
----
-
-## Installation
-
-Create a virtual environment:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
+```txt
+parser.py      -> reads and validates map files
+schemas.py     -> defines typed data models
+graph.py       -> builds the graph
+pathfinder.py  -> finds valid paths
+simulator.py   -> moves drones turn by turn
+visualizer.py  -> displays the simulation with Pygame
+main.py        -> launches the full program
 ```
 
-Install dependencies:
+---
+
+## Instructions
+
+### Install dependencies
 
 ```bash
 make install
 ```
 
-Or directly:
+Or:
 
 ```bash
 pip3 install -r requirements.txt
 ```
 
----
+Main dependencies:
 
-## Dependencies
-
-The project uses:
-
-* `pydantic` for typed data validation;
-* `pygame` for the graphical visualizer;
-* `flake8` for code style checks;
-* `mypy` for static typing checks.
+* `pydantic`
+* `pygame`
+* `flake8`
+* `mypy`
 
 ---
-
-## Usage
 
 ### Run the simulation
 
@@ -104,19 +84,9 @@ Equivalent command:
 python3 main.py maps/easy/01_linear_path.txt
 ```
 
-This mode only prints the simulation movements.
-
-Example output:
-
-```txt
-D1-zone_a D2-zone_b
-D1-zone_c D2-goal
-D1-goal
-```
-
 ---
 
-### Run in debug mode
+### Run with debug output
 
 ```bash
 make debug MAP=maps/easy/01_linear_path.txt
@@ -128,12 +98,11 @@ Equivalent command:
 python3 main.py maps/easy/01_linear_path.txt --debug
 ```
 
-Debug mode prints:
+Debug mode displays:
 
 * parsed configuration;
-* start and end zones;
-* all zones;
-* all connections;
+* zones;
+* connections;
 * graph adjacency;
 * selected paths;
 * simulation output;
@@ -141,7 +110,7 @@ Debug mode prints:
 
 ---
 
-### Run the graphical visualizer
+### Run the visualizer
 
 ```bash
 make visual MAP=maps/easy/01_linear_path.txt
@@ -153,17 +122,6 @@ Equivalent command:
 python3 main.py maps/easy/01_linear_path.txt --visual
 ```
 
-The visualizer opens a Pygame window showing:
-
-* zones as nodes;
-* connections as lines;
-* selected paths with highlighted colors;
-* drones moving turn by turn;
-* zone capacities;
-* connection capacities;
-* restricted and priority badges;
-* current simulation turn.
-
 ---
 
 ### Run visualizer with debug output
@@ -174,7 +132,7 @@ make visual-debug MAP=maps/easy/01_linear_path.txt
 
 ---
 
-### Change the number of selected paths
+### Change the maximum number of paths
 
 ```bash
 make run MAP=maps/hard/02_capacity_hell.txt MAX_PATHS=3
@@ -186,61 +144,78 @@ Equivalent command:
 python3 main.py maps/hard/02_capacity_hell.txt --max-paths 3
 ```
 
-`MAX_PATHS` controls how many paths the pathfinder tries to use for distributing drones.
+`MAX_PATHS` controls how many paths the pathfinder may use to distribute drones.
+
+---
+
+### Important
+
+`MAP` must point to a file, not a folder.
+
+Correct:
+
+```bash
+make run MAP=maps/challenger/01_ultimate_challenge.txt
+```
+
+Incorrect:
+
+```bash
+make run MAP=maps/challenger/
+```
 
 ---
 
 ## Makefile Commands
 
-| Command                        | Description                          |
-| ------------------------------ | ------------------------------------ |
-| `make install`                 | Install project dependencies         |
-| `make run MAP=<file>`          | Run the simulation                   |
-| `make debug MAP=<file>`        | Run with debug output                |
-| `make visual MAP=<file>`       | Run with the Pygame visualizer       |
-| `make visual-debug MAP=<file>` | Run with debug output and visualizer |
-| `make test`                    | Run Python syntax checks             |
-| `make lint`                    | Run `flake8` and `mypy`              |
-| `make clean`                   | Remove cache files                   |
-| `make re`                      | Clean and run again                  |
+| Command                        | Description                   |
+| ------------------------------ | ----------------------------- |
+| `make install`                 | Install dependencies          |
+| `make run MAP=<file>`          | Run the simulation            |
+| `make debug MAP=<file>`        | Run with debug output         |
+| `make visual MAP=<file>`       | Run the Pygame visualizer     |
+| `make visual-debug MAP=<file>` | Run with debug and visualizer |
+| `make lint`                    | Run `flake8` and `mypy`       |
+| `make clean`                   | Remove cache files            |
+| `make re`                      | Clean and run again           |
 
 ---
 
-## Input File Format
+## Input Format
 
-A map file must start with the number of drones:
+A map file must start with:
 
 ```txt
-nb_drones: 5
+nb_drones: 3
 ```
 
 Then it must define one start hub:
 
 ```txt
-start_hub: start 0 0 [color=green max_drones=5]
+start_hub: start 0 0 [color=green max_drones=3]
 ```
 
 One end hub:
 
 ```txt
-end_hub: goal 10 0 [color=green max_drones=5]
+end_hub: goal 3 0 [color=red max_drones=3]
 ```
 
-And any number of regular hubs:
+Regular hubs:
 
 ```txt
-hub: zone_a 1 0 [zone=normal color=blue max_drones=2]
-hub: zone_b 2 0 [zone=restricted color=orange max_drones=1]
-hub: zone_c 3 0 [zone=priority color=cyan max_drones=3]
-hub: wall 4 0 [zone=blocked color=red]
+hub: a 1 0 [zone=normal color=blue max_drones=1]
+hub: b 2 0 [zone=priority color=yellow max_drones=1]
+hub: tunnel 2 1 [zone=restricted color=orange max_drones=1]
+hub: wall 1 1 [zone=blocked color=red]
 ```
 
-Connections are defined with:
+Connections:
 
 ```txt
-connection: start-zone_a
-connection: zone_a-zone_b [max_link_capacity=2]
-connection: zone_b-goal
+connection: start-a [max_link_capacity=1]
+connection: a-b [max_link_capacity=1]
+connection: b-goal [max_link_capacity=1]
 ```
 
 Comments start with `#` and are ignored.
@@ -251,383 +226,430 @@ Comments start with `#` and are ignored.
 
 ### Zone metadata
 
-| Metadata     |  Default | Description                        |
-| ------------ | -------: | ---------------------------------- |
+| Metadata     | Default  | Description                        |
+| ------------ | -------- | ---------------------------------- |
 | `zone`       | `normal` | Zone type                          |
-| `color`      |   `none` | Visual color                       |
-| `max_drones` |      `1` | Maximum drones allowed in the zone |
+| `color`      | `none`   | Optional visual color              |
+| `max_drones` | `1`      | Maximum drones allowed in the zone |
 
 ### Connection metadata
 
-| Metadata            | Default | Description                                                         |
-| ------------------- | ------: | ------------------------------------------------------------------- |
-| `max_link_capacity` |     `1` | Maximum drones allowed to cross the connection during the same turn |
+| Metadata            | Default | Description                                  |
+| ------------------- | ------- | -------------------------------------------- |
+| `max_link_capacity` | `1`     | Maximum drones allowed on a link in one turn |
 
 ---
 
 ## Zone Types
 
-| Type         |     Cost | Behavior                    |
-| ------------ | -------: | --------------------------- |
-| `normal`     |        1 | Standard zone               |
-| `blocked`    | infinite | Cannot be entered           |
-| `restricted` |        2 | Costs more turns to cross   |
-| `priority`   |        1 | Preferred by the pathfinder |
+| Type         | Cost     | Behavior                                |
+| ------------ | -------- | --------------------------------------- |
+| `normal`     | `1`      | Standard zone                           |
+| `blocked`    | infinite | Cannot be entered                       |
+| `restricted` | `2`      | Takes extra time to cross               |
+| `priority`   | `1`      | Preferred by pathfinding in case of tie |
 
 ---
 
-## Simulation Rules
+## Input and Output Example
 
-The simulation is turn-based.
+### Input
 
-At each turn, each drone may:
+```txt
+nb_drones: 2
 
-* move to an adjacent connected zone;
-* wait if movement is not possible;
-* stay delivered once it reaches the end zone.
+start_hub: start 0 0 [color=green max_drones=2]
+hub: a 1 0 [zone=normal color=blue max_drones=1]
+end_hub: goal 2 0 [color=red max_drones=2]
 
-The simulator enforces:
+connection: start-a [max_link_capacity=1]
+connection: a-goal [max_link_capacity=1]
+```
 
-* no movement into blocked zones;
-* no movement through unknown connections;
-* zone capacity with `max_drones`;
-* connection capacity with `max_link_capacity`;
-* unlimited occupancy for the start zone;
-* unlimited delivered drones at the end zone;
-* waiting behavior for restricted zones;
-* simultaneous movement when constraints allow it.
+### Explanation
 
-Drones that do not move during a turn are omitted from the output line.
+There are two drones:
 
-The simulation ends when all drones reach the end zone.
+```txt
+D1
+D2
+```
+
+Both must follow:
+
+```txt
+start -> a -> goal
+```
+
+Zone `a` has:
+
+```txt
+max_drones=1
+```
+
+Only one drone can be inside `a` at the same time.
+
+### Expected output
+
+```txt
+D1-a
+D1-goal D2-a
+D2-goal
+```
+
+### Output explanation
+
+Turn 1:
+
+```txt
+D1-a
+```
+
+`D1` moves to `a`.
+`D2` waits because `a` is full.
+
+Turn 2:
+
+```txt
+D1-goal D2-a
+```
+
+`D1` leaves `a`, so `D2` can enter it.
+
+Turn 3:
+
+```txt
+D2-goal
+```
+
+`D2` reaches the end.
+
+Drones that do not move are not printed.
 
 ---
 
-## Output Format
+## Algorithm Explanation
 
-Each line represents one simulation turn.
-
-Each movement follows this format:
+The program works in three main phases:
 
 ```txt
-D<ID>-<zone>
+1. Parsing and validation
+2. Pathfinding
+3. Turn-by-turn simulation
 ```
-
-Example:
-
-```txt
-D1-roof1 D2-corridorA
-D1-roof2 D2-tunnelB
-D1-goal D2-goal
-```
-
-`D<ID>` is the drone identifier.
-
-`<zone>` is the destination zone reached during this turn.
 
 ---
 
-## Architecture
+### 1. Parsing and validation
+
+The parser reads the map file, removes comments and empty lines, then identifies each line by its prefix:
 
 ```txt
-.
-├── main.py
-├── parser.py
-├── schemas.py
-├── graph.py
-├── pathfinder.py
-├── simulator.py
-├── visualizer.py
-├── requirements.txt
-├── Makefile
-└── maps/
+nb_drones:
+start_hub:
+end_hub:
+hub:
+connection:
 ```
 
-### `schemas.py`
+It validates:
 
-Contains typed Pydantic models:
+* `nb_drones` is the first instruction;
+* there is one start hub;
+* there is one end hub;
+* zone names are unique;
+* connections reference existing zones;
+* metadata keys are valid;
+* capacities are positive integers;
+* start and end are not blocked.
 
-* `FlyinConfig`;
-* `ZoneSchema`;
-* `ConnectionSchema`;
-* `ParsedMap`;
-* `ZoneType`.
+`pydantic` is used to store typed data and validate constraints.
 
-### `parser.py`
+---
 
-Reads and validates map files.
+### 2. Graph representation
 
-It handles:
+The map is represented as an undirected graph.
 
-* comments;
-* metadata blocks;
-* duplicate zones;
-* duplicate connections;
-* invalid zone types;
-* invalid capacities;
-* unknown zones in connections;
-* missing start or end zones.
+A connection:
 
-### `graph.py`
+```txt
+connection: a-b
+```
 
-Builds the internal graph structure.
+means the drone can move:
 
-It stores:
+```txt
+a -> b
+b -> a
+```
+
+The graph stores:
 
 * zones;
 * connections;
 * adjacency lists;
-* start and end zone names;
-* drone count.
+* start and end names;
+* normalized connection keys.
 
-It also provides helper methods for:
+The adjacency list allows fast neighbor lookup during pathfinding.
 
-* neighbors;
-* zone lookup;
-* connection lookup;
-* movement cost;
-* blocked zones;
-* start and end detection.
+Example:
 
-### `pathfinder.py`
+```python
+{
+    "start": ["a"],
+    "a": ["start", "goal"],
+    "goal": ["a"],
+}
+```
 
-Computes paths from start to end.
+---
 
-It provides:
+### 3. Pathfinding
 
-* a Dijkstra-based shortest path method;
-* a multiple-path search method;
-* path cost calculation;
-* priority-zone handling;
-* overlap penalty between selected paths;
-* reversed-edge conflict avoidance.
+The project uses Dijkstra because all zones do not have the same movement cost.
 
-### `simulator.py`
+Costs:
 
-Runs the turn-by-turn simulation.
+```txt
+normal      -> 1
+priority    -> 1
+restricted  -> 2
+blocked     -> ignored
+```
 
-It handles:
+Dijkstra keeps:
 
-* drone creation;
-* path assignment;
-* movement validation;
-* zone occupancy;
-* connection usage;
-* restricted-zone waiting;
-* delivered drones;
-* simulation history for the visualizer.
+* `distances`: best known cost from start;
+* `parents`: previous zone used to rebuild the path;
+* `visited`: already processed zones;
+* `queue`: priority queue handled with `heapq`.
 
-### `visualizer.py`
+When the end is reached, the path is rebuilt from `parents` and reversed.
 
-Displays the simulation with Pygame.
+---
 
-It shows:
+### 4. Multiple paths
 
-* graph structure;
-* selected paths;
-* drones;
-* zone labels;
+Using a single path can create bottlenecks.
+
+The pathfinder searches multiple candidate paths, then selects paths using:
+
+* total cost;
+* path length;
+* overlap with selected paths;
+* reversed-edge conflicts.
+
+This is a design compromise: the program does not guarantee the absolute optimal result, but it produces valid and efficient routes while keeping the implementation readable.
+
+---
+
+### 5. Simulation
+
+The simulator creates all drones and assigns each one to a path.
+
+Each drone stores:
+
+```txt
+drone_id
+path
+path_index
+delivered
+in_transit
+transit_from
+transit_to
+```
+
+At each turn, the simulator:
+
+1. builds zone occupancy;
+2. resets connection usage;
+3. processes each drone once;
+4. checks if the drone can move;
+5. updates zone occupancy;
+6. updates connection usage;
+7. saves movement output;
+8. saves history for the visualizer.
+
+---
+
+### 6. Capacity handling
+
+Zone capacity is handled with:
+
+```python
+zone_occupancy = {
+    "a": 1,
+}
+```
+
+Connection capacity is handled with:
+
+```python
+connection_usage = {
+    ("a", "b"): 1,
+}
+```
+
+Before testing a movement, the simulator temporarily removes the drone from its current zone. This allows simultaneous movement.
+
+Example:
+
+```txt
+D1 leaves A
+D2 enters A during the same turn
+```
+
+This is allowed if the capacity is respected at the end of the turn.
+
+---
+
+### 7. Restricted zones
+
+Restricted zones take extra time.
+
+When a drone enters a restricted zone, it is put in transit:
+
+```txt
+in_transit = True
+transit_from = a
+transit_to = tunnel
+```
+
+Example:
+
+```txt
+Turn 1: D1-a
+Turn 2: D1-a-tunnel
+Turn 3: D1-tunnel
+Turn 4: D1-goal
+```
+
+---
+
+## Visual Representation
+
+The project includes a Pygame visualizer.
+
+It displays:
+
+* zones as circles;
+* connections as lines;
+* selected paths as colored thick lines;
+* drones as labeled circles;
+* zone names;
 * zone capacities;
 * connection capacities;
 * restricted and priority badges;
-* current turn;
+* current turn number;
+* play or pause status;
 * keyboard controls.
 
 ---
 
-## Algorithm Strategy
+### Visualizer inputs
 
-The algorithm is split into three main phases.
-
-### 1. Parsing and validation
-
-The parser reads the map and converts every line into typed objects.
-
-Invalid input stops the program with a clear error message containing the line number and the cause.
-
-### 2. Pathfinding
-
-The project uses a Dijkstra-based approach to compute weighted shortest paths.
-
-Movement costs are based on the destination zone:
-
-* `normal`: cost 1;
-* `priority`: cost 1 but preferred in tie-breaking;
-* `restricted`: cost 2;
-* `blocked`: ignored.
-
-For multiple drones, the pathfinder searches several candidate paths and selects paths using:
-
-* total path cost;
-* path length;
-* overlap with already selected paths;
-* reversed-edge conflict detection.
-
-This helps distribute drones across multiple routes and reduce bottlenecks.
-
-### 3. Turn scheduling
-
-The simulator processes drones turn by turn.
-
-For each drone, it checks:
-
-* whether the drone is already delivered;
-* whether it must wait because of a restricted zone;
-* whether the next zone exists;
-* whether the next zone is blocked;
-* whether the next zone has enough capacity;
-* whether the connection has enough remaining capacity for the current turn.
-
-If movement is valid, the drone moves and the simulator updates:
-
-* zone occupancy;
-* connection usage;
-* drone position;
-* drone delivery status;
-* simulation history.
-
----
-
-## Restricted Zones
-
-Restricted zones have a movement cost of 2.
-
-In this implementation, this is represented by forcing a drone to wait one turn after entering a restricted zone before it can move again.
-
-This models the additional movement cost while keeping the simulation state easy to inspect and display.
-
----
-
-## Priority Zones
-
-Priority zones have the same movement cost as normal zones, but the pathfinder gives them a better priority score.
-
-When two paths have the same total cost, paths using priority zones are preferred.
-
----
-
-## Capacity Handling
-
-### Zone capacity
-
-Each zone has a maximum number of drones allowed at once.
-
-Example:
+The visualizer receives:
 
 ```txt
-hub: waiting_area 2 1 [max_drones=4]
+graph
+history
+paths
 ```
 
-This zone can contain up to 4 drones at the same time.
+Example `history`:
 
-The start and end zones are special:
-
-* all drones begin at the start zone;
-* multiple drones may be delivered at the end zone.
-
-### Connection capacity
-
-Each connection has a maximum number of drones allowed to traverse it during the same turn.
-
-Example:
-
-```txt
-connection: corridorA-tunnelB [max_link_capacity=2]
+```python
+[
+    {1: "start", 2: "start"},
+    {1: "a", 2: "start"},
+    {1: "goal", 2: "a"},
+    {2: "goal"},
+]
 ```
 
-At most 2 drones can use this connection during one simulation turn.
+Example `paths`:
+
+```python
+[
+    ["start", "a", "goal"],
+    ["start", "b", "goal"],
+]
+```
 
 ---
 
-## Visualizer
+### Visual elements
 
-The graphical visualizer is built with Pygame.
+| Element             | Meaning             |
+| ------------------- | ------------------- |
+| Green node          | Start or end zone   |
+| Red node            | Blocked zone        |
+| Orange node         | Restricted zone     |
+| Yellow node         | Priority zone       |
+| Blue node           | Normal zone         |
+| `R` badge           | Restricted zone     |
+| `P` badge           | Priority zone       |
+| `max:<number>`      | Zone capacity       |
+| `L<number>`         | Connection capacity |
+| `D1`, `D2`          | Drone identifiers   |
+| Colored thick lines | Selected paths      |
 
-Run it with:
+---
 
-```bash
-python3 main.py maps/easy/01_linear_path.txt --visual
-```
+### Visualizer controls
 
-Controls:
+| Key             | Action               |
+| --------------- | -------------------- |
+| `Space`         | Pause or play        |
+| `Right arrow`   | Next turn            |
+| `Left arrow`    | Previous turn        |
+| `+` or `=`      | Increase speed       |
+| `-`             | Decrease speed       |
+| `R`             | Reset to first frame |
+| `Q` or `Escape` | Quit visualizer      |
 
-| Key             | Action                   |
-| --------------- | ------------------------ |
-| `Space`         | Pause / play             |
-| `Right arrow`   | Next turn                |
-| `Left arrow`    | Previous turn            |
-| `+`             | Increase animation speed |
-| `-`             | Decrease animation speed |
-| `R`             | Reset animation          |
-| `Q` or `Escape` | Quit                     |
+---
+
+### Why the visualizer is useful
 
 The visualizer helps understand:
 
-* how drones are distributed across paths;
-* where bottlenecks happen;
-* how capacities affect movement;
-* how restricted zones delay drones;
-* how priority routes are used;
-* how many drones are present on each zone.
+* drone distribution;
+* why drones wait;
+* bottlenecks;
+* zone capacity effects;
+* connection capacity effects;
+* restricted-zone delays;
+* selected paths;
+* simulation correctness.
 
----
-
-## Performance Goals
-
-The subject provides the following reference targets.
-
-| Map type       |           Expected performance |
-| -------------- | -----------------------------: |
-| Easy maps      |             Less than 10 turns |
-| Medium maps    |                    10–30 turns |
-| Hard maps      |             Less than 60 turns |
-| Challenger map | Optional target: beat 45 turns |
-
-Specific targets include:
-
-| Map                                 |                       Target |
-| ----------------------------------- | ---------------------------: |
-| Linear path with 2 drones           |                    ≤ 6 turns |
-| Simple fork with 4 drones           |                    ≤ 8 turns |
-| Basic capacity with 4 drones        |                    ≤ 6 turns |
-| Dead end trap with 5 drones         |                   ≤ 12 turns |
-| Circular loop with 6 drones         |                   ≤ 15 turns |
-| Priority puzzle with 5 drones       |                   ≤ 12 turns |
-| Maze nightmare with 8 drones        |                   ≤ 30 turns |
-| Capacity hell with 12 drones        |                   ≤ 35 turns |
-| Ultimate challenge with 15 drones   |                   ≤ 45 turns |
-| The Impossible Dream with 25 drones | Optional reference: 45 turns |
+It is especially useful for complex maps where terminal output alone is hard to read.
 
 ---
 
 ## Error Handling
 
-The parser stops on invalid input and displays a clear error message.
-
-Examples of handled errors:
+The parser reports errors for:
 
 * missing `nb_drones`;
-* missing `start_hub`;
-* missing `end_hub`;
-* duplicate zone name;
+* wrong first instruction;
+* missing start or end;
+* duplicate zone;
 * duplicate connection;
 * invalid metadata;
-* invalid zone type;
-* invalid capacity value;
-* connection using an unknown zone;
-* connection with invalid syntax.
+* invalid capacity;
+* unknown zone in connection;
+* blocked start or end.
+
+The simulator can also stop if no drone can move and the simulation is stuck.
 
 ---
 
 ## Quality Checks
 
-Run syntax checks:
-
-```bash
-make test
-```
-
-Run style and type checks:
+Run checks with:
 
 ```bash
 make lint
@@ -640,35 +662,23 @@ flake8 .
 mypy .
 ```
 
+Run project tests with:
+
+```bash
+make test
+```
+
 ---
 
 ## Resources
 
-### Python
-
-* [Python documentation](https://docs.python.org/3/)
-* [Python typing documentation](https://docs.python.org/3/library/typing.html)
-* [heapq documentation](https://docs.python.org/3/library/heapq.html)
-
-### Pydantic
-
-* [Pydantic documentation](https://docs.pydantic.dev/)
-
-### Pygame
-
-* [Pygame documentation](https://www.pygame.org/docs/)
-
-### Algorithms
-
-* [Dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
-* [Graph theory](https://en.wikipedia.org/wiki/Graph_theory)
-* [Pathfinding](https://en.wikipedia.org/wiki/Pathfinding)
-
-### Code quality
-
-* [flake8 documentation](https://flake8.pycqa.org/)
-* [mypy documentation](https://mypy.readthedocs.io/)
-* [PEP 257 docstrings](https://peps.python.org/pep-0257/)
+* Python documentation
+* Pydantic documentation
+* Pygame documentation
+* Dijkstra's algorithm
+* Graph theory
+* flake8 documentation
+* mypy documentation
 
 ---
 
@@ -678,10 +688,11 @@ AI was used as a support tool during development.
 
 It helped with:
 
-* breaking down the subject requirements;
+* understanding the subject;
 * explaining graph and pathfinding concepts;
 * reviewing edge cases;
 * creating test ideas;
 * improving documentation;
-* explaining bugs and debugging strategies;
-* drafting parts of the README.
+* debugging support.
+
+The implementation decisions, tests and final code remain the responsibility of the student.
